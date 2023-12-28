@@ -10,10 +10,15 @@ const errorHandler = (err, req, res, next) => {
                 });
             break;
         case constants.UNAUTHORIZED:
-            res.json(
-                {
-                    title: "Unauthorized", message: err.message, stackTrace: err.stack
-                });
+            return res.status(401).json({
+                status: false,
+                errors: [
+                    {
+                        message: "You need to sign in to proceed.",
+                        code: "NOT_SIGNEDIN"
+                    },
+                ],
+            });
         case constants.FORBIDDEN:
             res.json(
                 {

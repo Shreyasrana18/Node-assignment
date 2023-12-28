@@ -70,7 +70,112 @@ const signup = asyncHandler(async (req, res) => {
     res.status(201).json(response);
 });
 
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        res.status(400).json({
+            status: false,
+            errors: [
+                {
+                    param: !email ? "email" : "password",
+                    message: !email ? "Please provide a valid email address." : "Please fill in the password field.",
+                    code: !email ? "INVALID_INPUT" : "INVALID_INPUT",
+                },
+            ],
+        });
+        return;
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        res.status(400).json({
+            status: false,
+            errors: [
+                {
+                    param: "email",
+                    message: "The credentials you provided are invalid.",
+                    code: "INVALID_CREDENTIALS",
+                },
+            ],
+        });
+        return;
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (passwordMatch) {
+        const accessToken = jwt.sign(
+            {
+                user: {
+                    username: user.username,
+                    email: user.email,
+                    id: user._id,
+                },
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "60m" }
+        );
+
+        const response = {
+            status: true,
+            content: {
+                data: {
+                    id: user._id,
+                    name: user.username,
+                    email: user.email,
+                    created_at: user.createdAt.toISOString(),
+                },
+                meta: {
+                    access_token: accessToken,
+                },
+            },
+        };
+
+        res.status(200).json(response);
+    } else {
+        res.status(401).json({
+            status: false,
+            errors: [
+                {
+                    param: "password",
+                    message: "The credentials you provided are invalid.",
+                    code: "INVALID_CREDENTIALS",
+                },
+            ],
+        });
+    }
+});
+
+const me = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+        res.status(401).json({
+            status: false,
+            errors: [
+                {
+                    message: "You need to sign in to proceed.",
+                    code: "NOT_SIGNEDIN"
+                },
+            ],
+        });
+    } else {
+        const response = {
+            status: true,
+            content: {
+                data: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    created_at: user.createdAt.toISOString(),
+                },
+            },
+        };
+        res.status(200).json(response);
+    }
+
+});
 
 
 
-module.exports = { signup };
+module.exports = { signup, login, me };
