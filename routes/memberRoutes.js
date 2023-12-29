@@ -1,10 +1,10 @@
 const express = require('express');
 const validateToken = require('../middleware/validateToken');
+const { addMember, deleteMember } = require('../controllers/memberController');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.send("Works Member");
-});
+router.post('/',validateToken, addMember);
+router.delete('/:id',validateToken, deleteMember);
 
 module.exports = router;

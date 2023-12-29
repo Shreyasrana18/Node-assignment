@@ -12,16 +12,12 @@ const communitySchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        unique: true,
+        unique: false,
     },
     owner: {
         type: String,
         ref: 'User'
-    },
-    members: {
-        type: Array,
-        required: true,
-    },
+    }
 }, {
     timestamps: true,
 
