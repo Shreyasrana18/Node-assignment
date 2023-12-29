@@ -121,24 +121,55 @@ const addMember = asyncHandler(async (req, res) => {
 const deleteMember = asyncHandler(async (req, res) => {
     const id = req.params.id;
 
-    const member = await Member.findOne({ _id: id });
-    console.log(member)
+    try {
+        const member = await Member.findOne({ _id: id });
 
-    const community = await Community.findOne({ _id: member.community });
+        if (!member) {
+            return res.status(404).json({
+                status: false,
+                errors: [
+                    {
+                        param: "member",
+                        message: "Member not found.",
+                        code: "RESOURCE_NOT_FOUND",
+                    },
+                ],
+            });
+        }
 
-    console.log(community)
+        const community = await Community.findOne({ _id: member.community });
 
-    if (community.owner != req.user._id) {
-        return next(new ErrorHandler("NOT_ALLOWED_ACCESS", 400))
+        if (!community || community.owner !== req.user._id) {
+            return res.status(403).json({
+                status: false,
+                errors: [
+                    {
+                        message: "You are not authorized to perform this action.",
+                        code: "NOT_ALLOWED_ACCESS",
+                    },
+                ],
+            });
+        }
+
+        await Member.deleteOne({ _id: id });
+
+        res.status(200).json({
+            status: true,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: false,
+            errors: [
+                {
+                    param: "server",
+                    message: "Internal Server Error",
+                    code: "INTERNAL_SERVER_ERROR",
+                },
+            ],
+        });
     }
 
-
-    await Member.deleteOne({ _id: id });
-
-
-    res.status(200).json({
-        status: true,
-    });
 });
 
 module.exports = { addMember, deleteMember };
